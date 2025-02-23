@@ -1,0 +1,47 @@
+#include <ch32v00x.h>
+#include <debug.h>
+
+void GPIO_Config(void)
+{
+    GPIO_InitTypeDef GPIO_InitStructure = {0};
+
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOD, ENABLE); // Enable clock for Port D
+
+    // Configure PD0 as input (IR sensor)
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; // Enable internal pull-up
+    GPIO_Init(GPIOD, &GPIO_InitStructure);
+
+    // Configure PD4 as output (LED)
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOD, &GPIO_InitStructure);
+}
+
+int main(void)
+{
+    SystemCoreClockUpdate();
+    Delay_Init();
+    USART_Printf_Init(115200); // Enable UART debugging
+    GPIO_Config();
+
+    printf("IR Sensor Debugging Started...\r\n");
+
+    while (1)
+    {
+        uint8_t ir_state = GPIO_ReadInputDataBit(GPIOD, GPIO_Pin_0);
+        printf("IR Sensor State: %d\r\n", ir_state); // Print sensor state
+
+        if (ir_state == 0) // If sensor is active-low
+        {
+            GPIO_WriteBit(GPIOD, GPIO_Pin_4, Bit_SET); // Turn LED ON
+        }
+        else
+        {
+            GPIO_WriteBit(GPIOD, GPIO_Pin_4, Bit_RESET); // Turn LED OFF
+        }
+
+        Delay_Ms(500); // Delay for stability
+    }
+}
